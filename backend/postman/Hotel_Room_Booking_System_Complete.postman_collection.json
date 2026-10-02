@@ -1,0 +1,371 @@
+{
+  "info": {
+    "name": "Hotel Room Booking System (Problem 126) — Complete API Collection",
+    "_postman_id": "hotel-room-booking-system-complete",
+    "description": "Complete Postman collection for the Hotel Room Booking System (Problem 126) backend.\n\n### Environments & Variables:\n- `BASE_URL`: http://localhost:5000\n- `GUEST_TOKEN`: Bearer token for guest operations\n- `MANAGER_TOKEN`: Bearer token for manager operations\n- `ROOM_ID`: Active Room MongoDB ObjectId\n- `BOOKING_ID`: Booking MongoDB ObjectId\n\n### Folder Organization:\n1. Health Check\n2. Authentication\n3. Room Management (Manager Only)\n4. Room Search & Filtering (Public)\n5. Bookings Management (Guest & Manager)\n6. Authorization and Error Cases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:5000" },
+    { "key": "GUEST_TOKEN", "value": "" },
+    { "key": "MANAGER_TOKEN", "value": "" },
+    { "key": "ROOM_ID", "value": "" },
+    { "key": "BOOKING_ID", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "item": [
+        {
+          "name": "Liveness Probe (GET /health)",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/health",
+            "description": "Checks API server liveness. Returns 200 OK with environment and timestamp."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication",
+      "item": [
+        {
+          "name": "Register Guest (POST /api/auth/register)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/auth/register",
+            "description": "Public registration for guest account. Returns JWT token and guest info (password excluded)."
+          }
+        },
+        {
+          "name": "Login Guest (POST /api/auth/login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/auth/login",
+            "description": "Authenticates guest and returns JWT token."
+          }
+        },
+        {
+          "name": "Login Manager (POST /api/auth/login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@hotel.com\",\n  \"password\": \"ManagerSecret123!\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/auth/login",
+            "description": "Authenticates manager account seeded via CLI. Returns JWT token."
+          }
+        },
+        {
+          "name": "Get Authenticated Profile (GET /api/auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/auth/me",
+            "description": "Retrieves the currently authenticated user's profile."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Room Management (Manager Only)",
+      "item": [
+        {
+          "name": "Create Room (POST /api/rooms)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"301\",\n  \"type\": \"Deluxe\",\n  \"pricePerNight\": 180,\n  \"capacity\": 2,\n  \"description\": \"Ocean view deluxe suite with king bed\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/rooms",
+            "description": "Manager adds a new room to inventory."
+          }
+        },
+        {
+          "name": "Update Room (PUT /api/rooms/:id)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pricePerNight\": 195,\n  \"description\": \"Newly renovated ocean view deluxe suite\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+            "description": "Manager updates price, capacity, type or description."
+          }
+        },
+        {
+          "name": "Deactivate Room (DELETE /api/rooms/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+            "description": "Manager soft-deactivates room inventory (sets isActive: false). Checks for confirmed bookings first."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Room Search & Filtering (Public)",
+      "item": [
+        {
+          "name": "List All Active Rooms (GET /api/rooms)",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/rooms",
+            "description": "Public list of all active rooms with default pagination (10 per page)."
+          }
+        },
+        {
+          "name": "Filter Rooms by Type (GET /api/rooms?type=Suite)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/rooms?type=Suite",
+              "query": [{ "key": "type", "value": "Suite" }]
+            },
+            "description": "Filter rooms by type (Standard, Deluxe, Suite)."
+          }
+        },
+        {
+          "name": "Filter Rooms by Max Price (GET /api/rooms?maxPrice=150)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/rooms?maxPrice=150",
+              "query": [{ "key": "maxPrice", "value": "150" }]
+            },
+            "description": "Filter rooms with pricePerNight <= maxPrice."
+          }
+        },
+        {
+          "name": "Sort Rooms by Price (GET /api/rooms?sort=pricePerNight)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/rooms?sort=pricePerNight",
+              "query": [{ "key": "sort", "value": "pricePerNight" }]
+            },
+            "description": "Sort rooms by price (ascending: pricePerNight, descending: -pricePerNight)."
+          }
+        },
+        {
+          "name": "Paginate Rooms (GET /api/rooms?page=1&limit=5)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/rooms?page=1&limit=5",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "5" }
+              ]
+            },
+            "description": "Paginate rooms with metadata (total, page, limit, totalPages)."
+          }
+        },
+        {
+          "name": "Get Single Room by ID (GET /api/rooms/:id)",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+            "description": "Public endpoint retrieving details for a single room."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Bookings Management (Guest & Manager)",
+      "item": [
+        {
+          "name": "Create Booking (POST /api/bookings)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{ROOM_ID}}\",\n  \"checkIn\": \"2026-11-01\",\n  \"checkOut\": \"2026-11-05\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/bookings",
+            "description": "Creates a new booking with automatic price calculation and overlap prevention."
+          }
+        },
+        {
+          "name": "Get My Bookings (GET /api/bookings/my)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/bookings/my",
+            "description": "Authenticated guest retrieves only their own bookings."
+          }
+        },
+        {
+          "name": "Get All Bookings (GET /api/bookings — Manager Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/bookings",
+            "description": "Manager retrieves all bookings across all guests with optional filters."
+          }
+        },
+        {
+          "name": "Get Booking Details by ID (GET /api/bookings/:id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/bookings/{{BOOKING_ID}}",
+            "description": "Retrieves booking details for owner guest or manager."
+          }
+        },
+        {
+          "name": "Cancel Booking (PATCH /api/bookings/:id/cancel)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/bookings/{{BOOKING_ID}}/cancel",
+            "description": "Cancels a booking, restoring date availability for future guests."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Authorization and Error Cases",
+      "item": [
+        {
+          "name": "Public Manager Registration Attempt (Security check)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hacker\",\n  \"email\": \"hacker@test.com\",\n  \"password\": \"Password123!\",\n  \"role\": \"manager\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/auth/register",
+            "description": "Ensures server forces role: 'guest' regardless of client input."
+          }
+        },
+        {
+          "name": "Unauthorized Create Room (401 Missing Token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"999\",\n  \"type\": \"Suite\",\n  \"pricePerNight\": 500,\n  \"capacity\": 4\n}"
+            },
+            "url": "{{BASE_URL}}/api/rooms",
+            "description": "Rejects request with 401 Unauthorized."
+          }
+        },
+        {
+          "name": "Forbidden Create Room as Guest (403 Role Check)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"999\",\n  \"type\": \"Suite\",\n  \"pricePerNight\": 500,\n  \"capacity\": 4\n}"
+            },
+            "url": "{{BASE_URL}}/api/rooms",
+            "description": "Rejects guest with 403 Forbidden."
+          }
+        },
+        {
+          "name": "Overlapping Booking Attempt (409 Conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{ROOM_ID}}\",\n  \"checkIn\": \"2026-11-02\",\n  \"checkOut\": \"2026-11-04\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/bookings",
+            "description": "Rejects double-booking attempt with 409 Conflict."
+          }
+        },
+        {
+          "name": "Invalid Date Range (400 CheckOut before CheckIn)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{ROOM_ID}}\",\n  \"checkIn\": \"2026-11-10\",\n  \"checkOut\": \"2026-11-05\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/bookings",
+            "description": "Rejects invalid date order with 400 Bad Request."
+          }
+        },
+        {
+          "name": "Past Date Booking Attempt (400 Past CheckIn)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{GUEST_TOKEN}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{ROOM_ID}}\",\n  \"checkIn\": \"2020-01-01\",\n  \"checkOut\": \"2020-01-05\"\n}"
+            },
+            "url": "{{BASE_URL}}/api/bookings",
+            "description": "Rejects booking in the past with 400 Bad Request."
+          }
+        }
+      ]
+    }
+  ]
+}

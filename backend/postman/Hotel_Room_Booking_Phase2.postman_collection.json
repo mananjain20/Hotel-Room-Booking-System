@@ -1,0 +1,337 @@
+{
+  "info": {
+    "name": "Hotel Room Booking System — Phase 2 (Rooms API)",
+    "_postman_id": "hotel-room-booking-phase2",
+    "description": "Postman collection for testing the room management API.\n\nSetup:\n1. Create an environment named 'Hotel Local' with:\n   - BASE_URL = http://localhost:5000\n   - MANAGER_TOKEN = (fill in after Phase 3 auth is implemented)\n2. With no token, POST/PUT/DELETE routes return 401.\n3. With a guest token, they return 403.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:5000" },
+    { "key": "MANAGER_TOKEN", "value": "<paste_manager_jwt_here_after_phase3>" },
+    { "key": "ROOM_ID", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health Check (Phase 1 regression)",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/health",
+        "description": "Verifies the server is running. Expected: 200 { success: true }"
+      }
+    },
+    {
+      "name": "GET All Rooms (default)",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/api/rooms",
+        "description": "Returns all active rooms with default pagination (page=1, limit=10).\nExpected: 200 with results array and pagination metadata."
+      }
+    },
+    {
+      "name": "GET Rooms — Filter by type=Deluxe",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?type=Deluxe",
+          "query": [{ "key": "type", "value": "Deluxe" }]
+        },
+        "description": "Returns only Deluxe rooms.\nExpected: 200. All results have type='Deluxe'."
+      }
+    },
+    {
+      "name": "GET Rooms — Filter by maxPrice=150",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?maxPrice=150",
+          "query": [{ "key": "maxPrice", "value": "150" }]
+        },
+        "description": "Returns rooms with pricePerNight <= 150.\nExpected: 200. All results have pricePerNight <= 150."
+      }
+    },
+    {
+      "name": "GET Rooms — Sort by price ascending",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?sort=pricePerNight",
+          "query": [{ "key": "sort", "value": "pricePerNight" }]
+        },
+        "description": "Returns rooms sorted cheapest first.\nExpected: 200. Prices in ascending order."
+      }
+    },
+    {
+      "name": "GET Rooms — Sort by price descending",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?sort=-pricePerNight",
+          "query": [{ "key": "sort", "value": "-pricePerNight" }]
+        },
+        "description": "Returns rooms sorted most expensive first.\nExpected: 200. Prices in descending order."
+      }
+    },
+    {
+      "name": "GET Rooms — Pagination page 1 of 2",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?page=1&limit=2",
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "2" }
+          ]
+        },
+        "description": "First page of results, 2 per page.\nExpected: 200. results=2, pagination.totalPages >= 1."
+      }
+    },
+    {
+      "name": "GET Rooms — Pagination page 2 of 2",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?page=2&limit=2",
+          "query": [
+            { "key": "page", "value": "2" },
+            { "key": "limit", "value": "2" }
+          ]
+        },
+        "description": "Second page of results.\nExpected: 200. pagination.page=2."
+      }
+    },
+    {
+      "name": "GET Rooms — Combined filter + sort + pagination",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?type=Standard&maxPrice=200&sort=pricePerNight&page=1&limit=5",
+          "query": [
+            { "key": "type", "value": "Standard" },
+            { "key": "maxPrice", "value": "200" },
+            { "key": "sort", "value": "pricePerNight" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "5" }
+          ]
+        },
+        "description": "All filters combined.\nExpected: 200 with filtered, sorted, paginated results."
+      }
+    },
+    {
+      "name": "GET Rooms — Invalid type (400)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?type=Penthouse",
+          "query": [{ "key": "type", "value": "Penthouse" }]
+        },
+        "description": "Invalid room type.\nExpected: 400 { success: false, message: '...' }"
+      }
+    },
+    {
+      "name": "GET Rooms — Invalid sort (400)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?sort=capacity",
+          "query": [{ "key": "sort", "value": "capacity" }]
+        },
+        "description": "Unsupported sort field.\nExpected: 400 { success: false }"
+      }
+    },
+    {
+      "name": "GET Rooms — Non-numeric maxPrice (400)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/api/rooms?maxPrice=abc",
+          "query": [{ "key": "maxPrice", "value": "abc" }]
+        },
+        "description": "maxPrice is not a number.\nExpected: 400 { success: false }"
+      }
+    },
+    {
+      "name": "GET Room by ID",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "description": "Replace {{ROOM_ID}} with a real MongoDB ObjectId from a created room.\nExpected: 200 with room data."
+      }
+    },
+    {
+      "name": "GET Room by ID — Invalid ID (400)",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/api/rooms/not-a-valid-id",
+        "description": "Malformed ObjectId.\nExpected: 400 { success: false, message: '...' }"
+      }
+    },
+    {
+      "name": "GET Room by ID — Not Found (404)",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/api/rooms/000000000000000000000000",
+        "description": "Valid ObjectId format but no such room.\nExpected: 404 { success: false }"
+      }
+    },
+    {
+      "name": "POST Create Room — No Token (401)",
+      "request": {
+        "method": "POST",
+        "url": "{{BASE_URL}}/api/rooms",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomNumber\": \"301\",\n  \"type\": \"Suite\",\n  \"pricePerNight\": 400,\n  \"capacity\": 4\n}"
+        },
+        "description": "No Authorization header.\nExpected: 401 Unauthorized."
+      }
+    },
+    {
+      "name": "POST Create Room — Guest Token (403)",
+      "request": {
+        "method": "POST",
+        "url": "{{BASE_URL}}/api/rooms",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <guest_token_here>" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomNumber\": \"301\",\n  \"type\": \"Suite\",\n  \"pricePerNight\": 400,\n  \"capacity\": 4\n}"
+        },
+        "description": "Authenticated as a guest (not a manager).\nExpected: 403 Forbidden."
+      }
+    },
+    {
+      "name": "POST Create Room — Manager Token (201)",
+      "request": {
+        "method": "POST",
+        "url": "{{BASE_URL}}/api/rooms",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomNumber\": \"301\",\n  \"type\": \"Suite\",\n  \"pricePerNight\": 400,\n  \"capacity\": 4,\n  \"description\": \"Luxury suite with ocean view\"\n}"
+        },
+        "description": "Valid manager JWT. Will create the room.\nExpected: 201 Created with room data.\n\nCopy the returned _id into the ROOM_ID variable."
+      }
+    },
+    {
+      "name": "POST Create Room — Missing Fields (400)",
+      "request": {
+        "method": "POST",
+        "url": "{{BASE_URL}}/api/rooms",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomNumber\": \"302\"\n}"
+        },
+        "description": "Missing type, pricePerNight, capacity.\nExpected: 400 Bad Request."
+      }
+    },
+    {
+      "name": "POST Create Room — Duplicate Room Number (409)",
+      "request": {
+        "method": "POST",
+        "url": "{{BASE_URL}}/api/rooms",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomNumber\": \"301\",\n  \"type\": \"Deluxe\",\n  \"pricePerNight\": 200,\n  \"capacity\": 3\n}"
+        },
+        "description": "Room 301 already exists from the create test above.\nExpected: 409 Conflict."
+      }
+    },
+    {
+      "name": "PUT Update Room — Price and Description (200)",
+      "request": {
+        "method": "PUT",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pricePerNight\": 450,\n  \"description\": \"Updated: luxury suite with city view\"\n}"
+        },
+        "description": "Update the price and description of a room.\nExpected: 200 with updated room data."
+      }
+    },
+    {
+      "name": "PUT Update Room — No Valid Fields (400)",
+      "request": {
+        "method": "PUT",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"unknownField\": \"ignored\"\n}"
+        },
+        "description": "Body contains no recognized updatable fields.\nExpected: 400 Bad Request."
+      }
+    },
+    {
+      "name": "PUT Update Room — No Token (401)",
+      "request": {
+        "method": "PUT",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pricePerNight\": 999\n}"
+        },
+        "description": "No Authorization header.\nExpected: 401 Unauthorized."
+      }
+    },
+    {
+      "name": "DELETE Deactivate Room — Manager Token (200)",
+      "request": {
+        "method": "DELETE",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+        ],
+        "description": "Soft-deletes the room (sets isActive: false).\nExpected: 200 with message confirming deactivation.\n\nThe room is NOT deleted from the database — booking history is preserved."
+      }
+    },
+    {
+      "name": "DELETE Deactivate Room — Already Inactive (400)",
+      "request": {
+        "method": "DELETE",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{MANAGER_TOKEN}}" }
+        ],
+        "description": "Room was already deactivated above.\nExpected: 400 Bad Request."
+      }
+    },
+    {
+      "name": "DELETE Room — No Token (401)",
+      "request": {
+        "method": "DELETE",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "description": "No Authorization header.\nExpected: 401 Unauthorized."
+      }
+    },
+    {
+      "name": "GET Room by ID — Deactivated Room (404)",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/api/rooms/{{ROOM_ID}}",
+        "description": "After deactivation, the public GET should return 404.\nExpected: 404 Not Found."
+      }
+    }
+  ]
+}
