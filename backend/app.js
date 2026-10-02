@@ -14,6 +14,21 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: '🏨 Welcome to Hotel Room Booking System API',
+    version: '1.0.0',
+    endpoints: {
+      health:   'GET  /health',
+      auth:     'POST /api/auth/register | POST /api/auth/login',
+      rooms:    'GET  /api/rooms | GET /api/rooms/:id',
+      bookings: 'GET  /api/bookings | POST /api/bookings',
+    },
+    docs: 'Use the Postman collections in /backend/postman/ for full API reference.',
+  });
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
