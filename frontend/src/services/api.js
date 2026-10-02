@@ -1,4 +1,4 @@
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export async function request(endpoint, options = {}) {
   const token = localStorage.getItem('hotel_auth_token');
@@ -15,7 +15,7 @@ export async function request(endpoint, options = {}) {
   };
 
   try {
-    const response = await fetch(endpoint, config);
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
