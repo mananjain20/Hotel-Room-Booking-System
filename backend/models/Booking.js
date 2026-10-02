@@ -53,6 +53,8 @@ const bookingSchema = new mongoose.Schema(
 bookingSchema.index({ room: 1, checkIn: 1, checkOut: 1 });
 bookingSchema.index({ guest: 1, status: 1 });
 
+// Checks if a room has any overlapping confirmed bookings for a given date range.
+// Overlap condition formula: (Existing checkIn < New checkOut) AND (Existing checkOut > New checkIn)
 bookingSchema.statics.hasOverlap = async function (roomId, checkIn, checkOut, excludeBookingId = null) {
   const query = {
     room: roomId,

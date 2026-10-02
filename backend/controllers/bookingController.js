@@ -24,6 +24,7 @@ const createBooking = asyncHandler(async (req, res) => {
 
   validateObjectId(roomId, 'room ID');
 
+  // Validate dates and ensure check-in is not in the past
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
 
@@ -56,6 +57,7 @@ const createBooking = asyncHandler(async (req, res) => {
   try {
     session = await mongoose.startSession();
     await session.withTransaction(async () => {
+      // Prevent double booking by checking overlapping date ranges
       const isOverlapping = await Booking.hasOverlap(room._id, checkInDate, checkOutDate);
       if (isOverlapping) {
         throw new AppError(
@@ -64,6 +66,7 @@ const createBooking = asyncHandler(async (req, res) => {
         );
       }
 
+      // Calculate total stay duration (in nights) and total price
       const timeDifference = checkOutDate.getTime() - checkInDate.getTime();
       const nights = Math.ceil(timeDifference / (1000 * 3600 * 24));
       const totalPrice = nights * room.pricePerNight;
@@ -84,6 +87,7 @@ const createBooking = asyncHandler(async (req, res) => {
       booking = created[0];
     });
   } catch (err) {
+    // Fallback for standalone MongoDB instances without replica set transactions
     if (
       err.message &&
       (err.message.includes('replica set') || err.message.includes('Transaction numbers'))
