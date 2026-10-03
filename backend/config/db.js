@@ -12,7 +12,7 @@ const connectDB = async () => {
     process.exit(1);
   }
 
-  // Ensure placeholders are replaced before attempting connection
+
   if (uri.includes('<YOUR_ATLAS_PASSWORD>') || uri.includes('<username>') || uri.includes('<password>')) {
     console.error(
       '❌  MONGO_URI contains placeholder credentials (<YOUR_ATLAS_PASSWORD>).\n' +
